@@ -1,0 +1,1135 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captain Auto-Pickup Personal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090d16;
+            color: #f8fafc;
+            user-select: none;
+        }
+
+        .duty-on-glow {
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: #facc15;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.7);
+            border: 2px solid #0f172a;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        @keyframes pulse-fast {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 0.8s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex justify-center items-start p-2 sm:p-4">
+
+    <!-- Mobile App Container -->
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden relative pb-12">
+        
+        <!-- Top Header with ON DUTY / OFF DUTY Switch -->
+        <div class="bg-slate-950 border-b border-slate-800 px-5 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-yellow-400 text-slate-950 flex items-center justify-center font-extrabold text-xl shadow">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-base text-white tracking-tight">CAPTAIN AUTO</h1>
+                    <div class="flex items-center space-x-1.5">
+                        <span id="header-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
+                        <p id="header-sub" class="text-[11px] font-bold text-slate-400">OFF DUTY</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ON DUTY / OFF DUTY Pill Button -->
+            <button id="duty-toggle-btn" onclick="toggleDuty()" class="bg-slate-800 border-2 border-slate-700 text-slate-300 px-4 py-2 rounded-full font-extrabold text-xs flex items-center space-x-2 transition-all duration-300">
+                <i id="duty-icon" class="fa-solid fa-power-off text-red-400"></i>
+                <span id="duty-text">OFF DUTY</span>
+            </button>
+        </div>
+
+        <!-- Subtle Status Bar -->
+        <div class="bg-slate-900/90 border-b border-slate-800/80 px-5 py-2 flex justify-between items-center text-[11px]">
+            <span class="text-slate-400 flex items-center space-x-1.5">
+                <i class="fa-solid fa-gauge-high text-yellow-400"></i>
+                <span>Pickup Speed: <b class="text-yellow-400">0.01 Sec</b></span>
+            </span>
+            <button onclick="openPermissionModal()" class="text-slate-400 hover:text-white flex items-center space-x-1">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Permissions</span>
+            </button>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="p-4 space-y-4">
+
+            <!-- Active Radar Banner (Shows when ON DUTY) -->
+            <div id="active-radar-box" class="hidden bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-3.5 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
+                    <div>
+                        <p class="text-xs font-extrabold text-emerald-300">ON DUTY • WATCHING RAPIDO</p>
+                        <p class="text-[10px] text-emerald-400/80">Auto-Accepting matched rides in 0.01s</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-extrabold bg-emerald-500 text-slate-950 px-2 py-0.5 rounded">ACTIVE</span>
+            </div>
+
+            <!-- Distance & Radius Filter Settings Card -->
+            <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-700/60 pb-2.5">
+                    <h2 class="text-xs font-extrabold text-yellow-400 uppercase tracking-wider flex items-center space-x-2">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                        <span>My Pickup & Drop Settings</span>
+                    </h2>
+                    <span class="text-[10px] bg-green-500/15 text-green-300 border border-green-500/30 px-2 py-0.5 rounded font-bold">Auto-Saved</span>
+                </div>
+
+                <!-- 1. Pickup Point Distance -->
+                <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+                    <div class="flex justify-between items-center text-xs mb-2">
+                        <span class="text-slate-300 font-bold flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-green-400 mr-2"></span>
+                            Pickup Point Radius
+                        </span>
+                        <span class="font-extrabold text-sm text-yellow-400 bg-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-700">
+                            Max <span id="pickup-val">2.0</span> KM
+                        </span>
+                    </div>
+                    <input type="range" id="pickup-slider" min="0.5" max="10" step="0.5" value="2.0" oninput="updateSliders()">
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-semibold">
+                        <span>0.5 KM</span>
+                        <span>5.0 KM</span>
+                        <span>10.0 KM</span>
+                    </div>
+                </div>
+
+                <!-- 2. Dropping Point Distance Range -->
+                <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-300 font-bold flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-red-400 mr-2"></span>
+                            Dropping Point Range
+                        </span>
+                        <span class="font-extrabold text-sm text-yellow-400 bg-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-700">
+                            <span id="drop-min-val">2.0</span> KM - <span id="drop-max-val">15.0</span> KM
+                        </span>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-1 font-semibold">
+                            <span>Minimum Drop KM</span>
+                        </div>
+                        <input type="range" id="drop-min-slider" min="1" max="25" step="0.5" value="2.0" oninput="updateSliders()">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-1 font-semibold">
+                            <span>Maximum Drop KM</span>
+                        </div>
+                        <input type="range" id="drop-max-slider" min="2" max="40" step="1" value="15.0" oninput="updateSliders()">
+                    </div>
+                </div>
+
+                <!-- 3. Ultra-Fast Reaction Speed Lock (0.01 Sec Default) -->
+                <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-slate-200">Auto-Pickup Reaction Time</p>
+                        <p class="text-[10px] text-slate-400">Clicks Accept when KM matches</p>
+                    </div>
+                    <span class="bg-yellow-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow">
+                        0.01 Seconds
+                    </span>
+                </div>
+            </div>
+
+            <!-- Live Test Simulator Controls -->
+            <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-extrabold text-slate-300 uppercase tracking-wider">Test Ride Catcher</span>
+                    <span class="text-[10px] text-slate-400">Turn ON DUTY to test</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button onclick="simulateIncomingRide(true)" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs py-3 px-3 rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center space-x-1.5 active:scale-95">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Test Match Ride</span>
+                    </button>
+                    <button onclick="simulateIncomingRide(false)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs py-3 px-3 rounded-xl border border-slate-600 transition flex items-center justify-center space-x-1.5 active:scale-95">
+                        <i class="fa-solid fa-xmark"></i>
+                        <span>Test Unmatched</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Auto-Pickup Logs -->
+            <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+                        <i class="fa-solid fa-list-check text-yellow-400"></i>
+                        <span>Ride Activity Log</span>
+                    </h2>
+                    <button onclick="clearLogs()" class="text-[10px] text-slate-400 hover:text-white font-semibold">Clear</button>
+                </div>
+                <div id="ride-logs" class="space-y-2 max-h-36 overflow-y-auto text-xs pr-1">
+                    <p class="text-slate-500 text-center py-3 text-[11px]">No rides scanned yet. Switch ON DUTY to start.</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- PERSISTENT RECURRING PERMISSION POPUP (SHOWS IF NOT ALLOWED)   -->
+        <!-- ============================================================== -->
+        <div id="permission-popup" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-slate-900 border-2 border-red-500 rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-4 animate-pulse-fast">
+                
+                <div class="flex items-center space-x-2.5 border-b border-slate-800 pb-3">
+                    <div class="w-10 h-10 rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-sm text-white">PERMISSIONS NOT ALLOWED!</h3>
+                        <p class="text-[11px] text-red-400 font-semibold">Enable all permissions to run 0.01s Auto-Pickup</p>
+                    </div>
+                </div>
+
+                <!-- Permission Toggles Inside Popup -->
+                <div class="space-y-2 text-xs bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <label class="flex items-center justify-between p-2 rounded-xl bg-slate-900 cursor-pointer">
+                        <span class="font-bold text-slate-200"><i class="fa-solid fa-bell text-yellow-400 mr-2"></i>Allow Notifications</span>
+                        <input type="checkbox" id="perm-notif" class="w-5 h-5 accent-yellow-400 rounded">
+                    </label>
+                    <label class="flex items-center justify-between p-2 rounded-xl bg-slate-900 cursor-pointer">
+                        <span class="font-bold text-slate-200"><i class="fa-solid fa-universal-access text-green-400 mr-2"></i>Accessibility Auto-Click</span>
+                        <input type="checkbox" id="perm-access" class="w-5 h-5 accent-yellow-400 rounded">
+                    </label>
+                    <label class="flex items-center justify-between p-2 rounded-xl bg-slate-900 cursor-pointer">
+                        <span class="font-bold text-slate-200"><i class="fa-solid fa-layer-group text-blue-400 mr-2"></i>Display Over Other Apps</span>
+                        <input type="checkbox" id="perm-overlay" class="w-5 h-5 accent-yellow-400 rounded">
+                    </label>
+                </div>
+
+                <div class="space-y-2 pt-1">
+                    <button onclick="allowAllPermissionsNow()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-extrabold py-3.5 rounded-2xl text-xs shadow-lg transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>ALLOW ALL PERMISSIONS</span>
+                    </button>
+                    <button onclick="dismissPermissionPopupTemporarily()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-2.5 rounded-xl text-[11px]">
+                        Close (Will Popup Again Until Allowed)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- INCOMING RAPIDO ORDER SIMULATION OVERLAY                       -->
+        <!-- ============================================================== -->
+        <div id="ride-popup" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-40 flex items-end sm:items-center justify-center p-3">
+            <div class="bg-slate-900 border-2 border-yellow-400 rounded-3xl w-full max-w-sm p-4 shadow-2xl relative">
+                
+                <!-- 0.01s Auto-Clicker Crosshair -->
+                <div id="auto-click-cursor" class="hidden absolute bottom-5 right-10 z-50 pointer-events-none flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full bg-green-400/50 border-2 border-green-300 animate-ping absolute"></div>
+                    <div class="w-9 h-9 rounded-full bg-yellow-400 text-slate-950 flex items-center justify-center font-extrabold shadow-lg">
+                        <i class="fa-solid fa-hand-pointer"></i>
+                    </div>
+                    <span class="bg-green-500 text-slate-950 text-[10px] font-extrabold px-2 py-0.5 rounded mt-1 shadow">0.01s TAP!</span>
+                </div>
+
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-3">
+                    <span class="bg-yellow-400 text-slate-950 text-xs font-extrabold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                        <i class="fa-solid fa-motorcycle"></i>
+                        <span>RAPIDO CAPTAIN ORDER</span>
+                    </span>
+                    <span id="popup-match-badge" class="text-xs font-extrabold px-2 py-0.5 rounded">SCANNING...</span>
+                </div>
+
+                <!-- Pickup & Drop Distance Boxes -->
+                <div class="space-y-2.5 text-xs bg-slate-950 p-3.5 rounded-2xl mb-4 border border-slate-800">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-green-400 inline-block"></span>
+                            <div>
+                                <p class="text-slate-400 text-[10px] font-bold uppercase">Pickup Point</p>
+                                <p id="popup-pickup-addr" class="font-bold text-slate-100 text-sm">RTC Bus Stand</p>
+                            </div>
+                        </div>
+                        <span id="popup-pickup-km" class="font-extrabold text-sm bg-green-500/20 text-green-300 px-2.5 py-1 rounded-lg border border-green-500/30">1.2 KM</span>
+                    </div>
+
+                    <div class="border-l-2 border-dashed border-slate-700 ml-1 pl-3 py-1 text-[11px] font-semibold text-slate-400" id="popup-reason-text">
+                        Matching radius filter...
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span>
+                            <div>
+                                <p class="text-slate-400 text-[10px] font-bold uppercase">Dropping Point</p>
+                                <p id="popup-drop-addr" class="font-bold text-slate-100 text-sm">Railway Station Road</p>
+                            </div>
+                        </div>
+                        <span id="popup-drop-km" class="font-extrabold text-sm bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg border border-blue-500/30">6.5 KM</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="closeRidePopup('SKIPPED')" class="col-span-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 rounded-2xl text-xs border border-slate-700">
+                        Skip
+                    </button>
+                    <button id="accept-ride-btn" onclick="acceptRideNow('MANUAL')" class="col-span-2 bg-green-500 hover:bg-green-400 text-slate-950 font-extrabold py-3.5 rounded-2xl text-sm shadow-lg shadow-green-500/30 flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-check-circle text-lg"></i>
+                        <span>ACCEPT RIDE</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Toast Notification -->
+        <div id="toast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 bg-slate-950 border border-yellow-400 text-white px-4 py-2.5 rounded-2xl shadow-2xl z-50 text-xs font-bold flex items-center space-x-2">
+            <i class="fa-solid fa-bolt text-yellow-400"></i>
+            <span id="toast-msg">Notification</span>
+        </div>
+
+    </div>
+
+    <script>
+        let isOnDuty = false;
+        let permissionsGranted = false;
+        let permissionNagInterval = null;
+        let autoAcceptTimeout = null;
+        let currentRide = null;
+
+        // Load saved settings & start permission check
+        window.onload = function() {
+            const savedPickup = localStorage.getItem('maxPickup');
+            const savedMinDrop = localStorage.getItem('minDrop');
+            const savedMaxDrop = localStorage.getItem('maxDrop');
+            if (savedPickup) document.getElementById('pickup-slider').value = savedPickup;
+            if (savedMinDrop) document.getElementById('drop-min-slider').value = savedMinDrop;
+            if (savedMaxDrop) document.getElementById('drop-max-slider').value = savedMaxDrop;
+            updateSliders();
+            startPermissionNagLoop();
+        };
+
+        // Sync settings directly to Android Native Accessibility Service
+        function syncWithAndroidNative() {
+            const maxPickup = parseFloat(document.getElementById('pickup-slider').value);
+            const minDrop = parseFloat(document.getElementById('drop-min-slider').value);
+            const maxDrop = parseFloat(document.getElementById('drop-max-slider').value);
+
+            localStorage.setItem('maxPickup', maxPickup);
+            localStorage.setItem('minDrop', minDrop);
+            localStorage.setItem('maxDrop', maxDrop);
+
+            if (window.AndroidBridge && window.AndroidBridge.saveFilterSettings) {
+                window.AndroidBridge.saveFilterSettings(maxPickup, minDrop, maxDrop, isOnDuty);
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2600);
+        }
+
+        function areAllPermissionsAllowed() {
+            if (window.AndroidBridge && window.AndroidBridge.isAccessibilityEnabled) {
+                permissionsGranted = window.AndroidBridge.isAccessibilityEnabled();
+                return permissionsGranted;
+            }
+            const n = document.getElementById('perm-notif').checked;
+            const a = document.getElementById('perm-access').checked;
+            const o = document.getElementById('perm-overlay').checked;
+            permissionsGranted = (n && a && o);
+            return permissionsGranted;
+        }
+
+        function startPermissionNagLoop() {
+            if (!areAllPermissionsAllowed()) {
+                openPermissionModal();
+            }
+            clearInterval(permissionNagInterval);
+            permissionNagInterval = setInterval(() => {
+                if (!areAllPermissionsAllowed()) {
+                    openPermissionModal();
+                }
+            }, 4000);
+        }
+
+        function openPermissionModal() {
+            document.getElementById('permission-popup').classList.remove('hidden');
+        }
+
+        function dismissPermissionPopupTemporarily() {
+            document.getElementById('permission-popup').classList.add('hidden');
+            if (!areAllPermissionsAllowed()) {
+                showToast("Permissions missing! Popup will return in 4 seconds.");
+            }
+        }
+
+        function allowAllPermissionsNow() {
+            document.getElementById('perm-notif').checked = true;
+            document.getElementById('perm-access').checked = true;
+            document.getElementById('perm-overlay').checked = true;
+            permissionsGranted = true;
+            clearInterval(permissionNagInterval);
+            document.getElementById('permission-popup').classList.add('hidden');
+
+            // If running inside real Android APK, open phone Accessibility Settings directly
+            if (window.AndroidBridge && window.AndroidBridge.openAccessibilitySettings) {
+                window.AndroidBridge.openAccessibilitySettings();
+            } else {
+                showToast("All Permissions Allowed! Switch ON DUTY now.");
+            }
+        }
+
+        function toggleDuty() {
+            if (!areAllPermissionsAllowed()) {
+                openPermissionModal();
+                showToast("Allow all permissions first!");
+                return;
+            }
+
+            isOnDuty = !isOnDuty;
+            const btn = document.getElementById('duty-toggle-btn');
+            const icon = document.getElementById('duty-icon');
+            const text = document.getElementById('duty-text');
+            const headerDot = document.getElementById('header-dot');
+            const headerSub = document.getElementById('header-sub');
+            const radarBox = document.getElementById('active-radar-box');
+
+            if (isOnDuty) {
+                btn.className = "bg-green-500 border-2 border-green-300 text-slate-950 px-4 py-2 rounded-full font-extrabold text-xs flex items-center space-x-2 transition-all duration-300 duty-on-glow";
+                icon.className = "fa-solid fa-bolt text-slate-950";
+                text.innerText = "ON DUTY";
+                headerDot.className = "w-2 h-2 rounded-full bg-green-400 animate-ping";
+                headerSub.innerText = "ON DUTY • 0.01s CATCHER";
+                headerSub.className = "text-[11px] font-bold text-green-400";
+                radarBox.classList.remove('hidden');
+                showToast("ON DUTY Activated!");
+            } else {
+                btn.className = "bg-slate-800 border-2 border-slate-700 text-slate-300 px-4 py-2 rounded-full font-extrabold text-xs flex items-center space-x-2 transition-all duration-300";
+                icon.className = "fa-solid fa-power-off text-red-400";
+                text.innerText = "OFF DUTY";
+                headerDot.className = "w-2 h-2 rounded-full bg-red-500";
+                headerSub.innerText = "OFF DUTY";
+                headerSub.className = "text-[11px] font-bold text-slate-400";
+                radarBox.classList.add('hidden');
+                showToast("Switched to OFF DUTY.");
+            }
+            syncWithAndroidNative();
+        }
+
+        function updateSliders() {
+            const pickup = parseFloat(document.getElementById('pickup-slider').value);
+            let dropMin = parseFloat(document.getElementById('drop-min-slider').value);
+            let dropMax = parseFloat(document.getElementById('drop-max-slider').value);
+
+            if (dropMin >= dropMax) {
+                dropMax = dropMin + 1;
+                document.getElementById('drop-max-slider').value = dropMax;
+            }
+
+            document.getElementById('pickup-val').innerText = pickup.toFixed(1);
+            document.getElementById('drop-min-val').innerText = dropMin.toFixed(1);
+            document.getElementById('drop-max-val').innerText = dropMax.toFixed(1);
+            syncWithAndroidNative();
+        }
+
+        function simulateIncomingRide(forceMatch) {
+            if (!areAllPermissionsAllowed()) {
+                openPermissionModal();
+                return;
+            }
+            if (!isOnDuty) {
+                showToast("Switch to ON DUTY at the top right first!");
+                return;
+            }
+
+            const maxPickup = parseFloat(document.getElementById('pickup-slider').value);
+            const minDrop = parseFloat(document.getElementById('drop-min-slider').value);
+            const maxDrop = parseFloat(document.getElementById('drop-max-slider').value);
+
+            let ridePickupKm = forceMatch ? Math.max(0.3, (Math.random() * (maxPickup - 0.1)).toFixed(1)) : (maxPickup + 2.5).toFixed(1);
+            let rideDropKm = forceMatch ? (minDrop + Math.random() * (maxDrop - minDrop)).toFixed(1) : (maxDrop + 5.0).toFixed(1);
+
+            currentRide = {
+                pickupKm: parseFloat(ridePickupKm),
+                dropKm: parseFloat(rideDropKm),
+                pickupAddr: "RTC Bus Stand",
+                dropAddr: "Railway Station"
+            };
+
+            document.getElementById('popup-pickup-km').innerText = currentRide.pickupKm + " KM";
+            document.getElementById('popup-drop-km').innerText = currentRide.dropKm + " KM";
+
+            const isFullMatch = (currentRide.pickupKm <= maxPickup) && (currentRide.dropKm >= minDrop && currentRide.dropKm <= maxDrop);
+            const matchBadge = document.getElementById('popup-match-badge');
+            const reasonText = document.getElementById('popup-reason-text');
+            const cursor = document.getElementById('auto-click-cursor');
+
+            document.getElementById('ride-popup').classList.remove('hidden');
+
+            if (isFullMatch) {
+                matchBadge.innerText = "MATCHED • 0.01s CLICK";
+                matchBadge.className = "text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/40";
+                reasonText.innerHTML = `<span class="text-green-400 font-bold">✓ Radius Matched! Auto-Accepting in 0.01s...</span>`;
+                cursor.classList.remove('hidden');
+
+                clearTimeout(autoAcceptTimeout);
+                autoAcceptTimeout = setTimeout(() => {
+                    acceptRideNow("AUTO (0.01s)");
+                }, 150);
+            } else {
+                matchBadge.innerText = "OUT OF RADIUS ✗";
+                matchBadge.className = "text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40";
+                cursor.classList.add('hidden');
+                reasonText.innerHTML = `<span class="text-rose-400 font-bold">✗ Ignored: KM does not match your settings.</span>`;
+            }
+        }
+
+        function acceptRideNow(mode) {
+            clearTimeout(autoAcceptTimeout);
+            document.getElementById('ride-popup').classList.add('hidden');
+            document.getElementById('auto-click-cursor').classList.add('hidden');
+            if (!currentRide) return;
+            showToast(`RIDE ACCEPTED IN 0.01s! (${currentRide.pickupKm}KM ➔ ${currentRide.dropKm}KM)`);
+            addLogItem(currentRide, mode, true);
+            currentRide = null;
+        }
+
+        function closeRidePopup(reason) {
+            clearTimeout(autoAcceptTimeout);
+            document.getElementById('ride-popup').classList.add('hidden');
+            document.getElementById('auto-click-cursor').classList.add('hidden');
+            if (currentRide) {
+                addLogItem(currentRide, reason, false);
+                currentRide = null;
+            }
+        }
+
+        function addLogItem(ride, statusText, accepted) {
+            const container = document.getElementById('ride-logs');
+            if (container.innerText.includes("No rides scanned yet")) container.innerHTML = "";
+            const div = document.createElement('div');
+            div.className = `p-2.5 rounded-xl border flex justify-between items-center ${accepted ? 'bg-emerald-950/30 border-emerald-700/50' : 'bg-slate-900 border-slate-800 opacity-70'}`;
+            div.innerHTML = `
+                <div>
+                    <p class="text-[11px] text-slate-200 font-bold">Pickup: <span class="text-green-400">${ride.pickupKm} KM</span> | Drop: <span class="text-blue-400">${ride.dropKm} KM</span></p>
+                </div>
+                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded ${accepted ? 'bg-green-500 text-slate-950' : 'bg-slate-800 text-slate-400'}">${statusText}</span>
+            `;
+            container.prepend(div);
+        }
+
+        function clearLogs() {
+            document.getElementById('ride-logs').innerHTML = `<p class="text-slate-500 text-center py-3 text-[11px]">No rides scanned yet. Switch ON DUTY to start.</p>`;
+        }
+    </script>
+</body>
+</html>
+``````html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captain Auto-Pickup Personal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090d16;
+            color: #f8fafc;
+            user-select: none;
+        }
+
+        .duty-on-glow {
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.5);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: #facc15;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.7);
+            border: 2px solid #0f172a;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        @keyframes pulse-fast {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 0.8s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex justify-center items-start p-2 sm:p-4">
+
+    <!-- Mobile App Container -->
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden relative pb-12">
+        
+        <!-- Top Header with ON DUTY / OFF DUTY Switch -->
+        <div class="bg-slate-950 border-b border-slate-800 px-5 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-yellow-400 text-slate-950 flex items-center justify-center font-extrabold text-xl shadow">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-base text-white tracking-tight">CAPTAIN AUTO</h1>
+                    <div class="flex items-center space-x-1.5">
+                        <span id="header-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
+                        <p id="header-sub" class="text-[11px] font-bold text-slate-400">OFF DUTY</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ON DUTY / OFF DUTY Pill Button -->
+            <button id="duty-toggle-btn" onclick="toggleDuty()" class="bg-slate-800 border-2 border-slate-700 text-slate-300 px-4 py-2 rounded-full font-extrabold text-xs flex items-center space-x-2 transition-all duration-300">
+                <i id="duty-icon" class="fa-solid fa-power-off text-red-400"></i>
+                <span id="duty-text">OFF DUTY</span>
+            </button>
+        </div>
+
+        <!-- Subtle Status Bar -->
+        <div class="bg-slate-900/90 border-b border-slate-800/80 px-5 py-2 flex justify-between items-center text-[11px]">
+            <span class="text-slate-400 flex items-center space-x-1.5">
+                <i class="fa-solid fa-gauge-high text-yellow-400"></i>
+                <span>Pickup Speed: <b class="text-yellow-400">0.01 Sec</b></span>
+            </span>
+            <button onclick="openPermissionModal()" class="text-slate-400 hover:text-white flex items-center space-x-1">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Permissions</span>
+            </button>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="p-4 space-y-4">
+
+            <!-- Active Radar Banner (Shows when ON DUTY) -->
+            <div id="active-radar-box" class="hidden bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-3.5 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
+                    <div>
+                        <p class="text-xs font-extrabold text-emerald-300">ON DUTY • WATCHING RAPIDO</p>
+                        <p class="text-[10px] text-emerald-400/80">Auto-Accepting matched rides in 0.01s</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-extrabold bg-emerald-500 text-slate-950 px-2 py-0.5 rounded">ACTIVE</span>
+            </div>
+
+            <!-- Distance & Radius Filter Settings Card -->
+            <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-700/60 pb-2.5">
+                    <h2 class="text-xs font-extrabold text-yellow-400 uppercase tracking-wider flex items-center space-x-2">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                        <span>My Pickup & Drop Settings</span>
+                    </h2>
+                    <span class="text-[10px] bg-green-500/15 text-green-300 border border-green-500/30 px-2 py-0.5 rounded font-bold">Auto-Saved</span>
+                </div>
+
+                <!-- 1. Pickup Point Distance -->
+                <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+                    <div class="flex justify-between items-center text-xs mb-2">
+                        <span class="text-slate-300 font-bold flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-green-400 mr-2"></span>
+                            Pickup Point Radius
+                        </span>
+                        <span class="font-extrabold text-sm text-yellow-400 bg-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-700">
+                            Max <span id="pickup-val">2.0</span> KM
+                        </span>
+                    </div>
+                    <input type="range" id="pickup-slider" min="0.5" max="10" step="0.5" value="2.0" oninput="updateSliders()">
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-semibold">
+                        <span>0.5 KM</span>
+                        <span>5.0 KM</span>
+                        <span>10.0 KM</span>
+                    </div>
+                </div>
+
+                <!-- 2. Dropping Point Distance Range -->
+                <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-300 font-bold flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-red-400 mr-2"></span>
+                            Dropping Point Range
+                        </span>
+                        <span class="font-extrabold text-sm text-yellow-400 bg-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-700">
+                            <span id="drop-min-val">2.0</span> KM - <span id="drop-max-val">15.0</span> KM
+                        </span>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-1 font-semibold">
+                            <span>Minimum Drop KM</span>
+                        </div>
+                        <input type="range" id="drop-min-slider" min="1" max="25" step="0.5" value="2.0" oninput="updateSliders()">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-1 font-semibold">
+                            <span>Maximum Drop KM</span>
+                        </div>
+                        <input type="range" id="drop-max-slider" min="2" max="40" step="1" value="15.0" oninput="updateSliders()">
+                    </div>
+                </div>
+
+                <!-- 3. Ultra-Fast Reaction Speed Lock (0.01 Sec Default) -->
+                <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-slate-200">Auto-Pickup Reaction Time</p>
+                        <p class="text-[10px] text-slate-400">Clicks Accept when KM matches</p>
+                    </div>
+                    <span class="bg-yellow-400 text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow">
+                        0.01 Seconds
+                    </span>
+                </div>
+            </div>
+
+            <!-- Live Test Simulator Controls -->
+            <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-extrabold text-slate-300 uppercase tracking-wider">Test Ride Catcher</span>
+                    <span class="text-[10px] text-slate-400">Turn ON DUTY to test</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button onclick="simulateIncomingRide(true)" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs py-3 px-3 rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center space-x-1.5 active:scale-95">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Test Match Ride</span>
+                    </button>
+                    <button onclick="simulateIncomingRide(false)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs py-3 px-3 rounded-xl border border-slate-600 transition flex items-center justify-center space-x-1.5 active:scale-95">
+                        <i class="fa-solid fa-xmark"></i>
+                        <span>Test Unmatched</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Auto-Pickup Logs -->
+            <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 shadow-lg">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+                        <i class="fa-solid fa-list-check text-yellow-400"></i>
+                        <span>Ride Activity Log</span>
+                    </h2>
+                    <button onclick="clearLogs()" class="text-[10px] text-slate-400 hover:text-white font-semibold">Clear</button>
+                </div>
+                <div id="ride-logs" class="space-y-2 max-h-36 overflow-y-auto text-xs pr-1">
+                    <p class="text-slate-500 text-center py-3 text-[11px]">No rides scanned yet. Switch ON DUTY to start.</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- PERSISTENT RECURRING PERMISSION POPUP (SHOWS IF NOT ALLOWED)   -->
+        <!-- ============================================================== -->
+        <div id="permission-popup" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-slate-900 border-2 border-red-500 rounded-3xl w-full max-w-sm p-5 shadow-2xl space-y-4 animate-pulse-fast">
+                
+                <div class="flex items-center space-x-2.5 border-b border-slate-800 pb-3">
+                    <div class="w-10 h-10 rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-sm text-white">PERMISSIONS NOT ALLOWED!</h3>
+                        <p class="text-[11px] text-red-400 font-semibold">Enable all permissions to run 0.01s Auto-Pickup</p>
+                    </div>
+                </div>
+
+                <!-- Permission Toggles Inside Popup -->
+                <div class="space-y-2 text-xs bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <label class="flex items-center justify-between p-2 rounded-xl bg-slate-900 cursor-pointer">
+                        <span class="font-bold text-slate-200"><i class="fa-solid fa-bell text-yellow-400 mr-2"></i>Allow Notifications</span>
+                        <input type="checkbox" id="perm-notif" class="w-5 h-5 accent-yellow-400 rounded">
+                    </label>
+                    <label class="flex items-center justify-between p-2 rounded-xl bg-slate-900 cursor-pointer">
+                        <span class="font-bold text-slate-200"><i class="fa-solid fa-universal-access text-green-400 mr-2"></i>Accessibility Auto-Click</span>
+                        <input type="checkbox" id="perm-access" class="w-5 h-5 accent-yellow-400 rounded">
+                    </label>
+                    <label class="flex items-center justify-between p-2 rounded-xl bg-slate-900 cursor-pointer">
+                        <span class="font-bold text-slate-200"><i class="fa-solid fa-layer-group text-blue-400 mr-2"></i>Display Over Other Apps</span>
+                        <input type="checkbox" id="perm-overlay" class="w-5 h-5 accent-yellow-400 rounded">
+                    </label>
+                </div>
+
+                <div class="space-y-2 pt-1">
+                    <button onclick="allowAllPermissionsNow()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-extrabold py-3.5 rounded-2xl text-xs shadow-lg transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>ALLOW ALL PERMISSIONS</span>
+                    </button>
+                    <button onclick="dismissPermissionPopupTemporarily()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-2.5 rounded-xl text-[11px]">
+                        Close (Will Popup Again Until Allowed)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- INCOMING RAPIDO ORDER SIMULATION OVERLAY                       -->
+        <!-- ============================================================== -->
+        <div id="ride-popup" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-40 flex items-end sm:items-center justify-center p-3">
+            <div class="bg-slate-900 border-2 border-yellow-400 rounded-3xl w-full max-w-sm p-4 shadow-2xl relative">
+                
+                <!-- 0.01s Auto-Clicker Crosshair -->
+                <div id="auto-click-cursor" class="hidden absolute bottom-5 right-10 z-50 pointer-events-none flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-full bg-green-400/50 border-2 border-green-300 animate-ping absolute"></div>
+                    <div class="w-9 h-9 rounded-full bg-yellow-400 text-slate-950 flex items-center justify-center font-extrabold shadow-lg">
+                        <i class="fa-solid fa-hand-pointer"></i>
+                    </div>
+                    <span class="bg-green-500 text-slate-950 text-[10px] font-extrabold px-2 py-0.5 rounded mt-1 shadow">0.01s TAP!</span>
+                </div>
+
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 mb-3">
+                    <span class="bg-yellow-400 text-slate-950 text-xs font-extrabold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                        <i class="fa-solid fa-motorcycle"></i>
+                        <span>RAPIDO CAPTAIN ORDER</span>
+                    </span>
+                    <span id="popup-match-badge" class="text-xs font-extrabold px-2 py-0.5 rounded">SCANNING...</span>
+                </div>
+
+                <!-- Pickup & Drop Distance Boxes -->
+                <div class="space-y-2.5 text-xs bg-slate-950 p-3.5 rounded-2xl mb-4 border border-slate-800">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-green-400 inline-block"></span>
+                            <div>
+                                <p class="text-slate-400 text-[10px] font-bold uppercase">Pickup Point</p>
+                                <p id="popup-pickup-addr" class="font-bold text-slate-100 text-sm">RTC Bus Stand</p>
+                            </div>
+                        </div>
+                        <span id="popup-pickup-km" class="font-extrabold text-sm bg-green-500/20 text-green-300 px-2.5 py-1 rounded-lg border border-green-500/30">1.2 KM</span>
+                    </div>
+
+                    <div class="border-l-2 border-dashed border-slate-700 ml-1 pl-3 py-1 text-[11px] font-semibold text-slate-400" id="popup-reason-text">
+                        Matching radius filter...
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span>
+                            <div>
+                                <p class="text-slate-400 text-[10px] font-bold uppercase">Dropping Point</p>
+                                <p id="popup-drop-addr" class="font-bold text-slate-100 text-sm">Railway Station Road</p>
+                            </div>
+                        </div>
+                        <span id="popup-drop-km" class="font-extrabold text-sm bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg border border-blue-500/30">6.5 KM</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="closeRidePopup('SKIPPED')" class="col-span-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 rounded-2xl text-xs border border-slate-700">
+                        Skip
+                    </button>
+                    <button id="accept-ride-btn" onclick="acceptRideNow('MANUAL')" class="col-span-2 bg-green-500 hover:bg-green-400 text-slate-950 font-extrabold py-3.5 rounded-2xl text-sm shadow-lg shadow-green-500/30 flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-check-circle text-lg"></i>
+                        <span>ACCEPT RIDE</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Toast Notification -->
+        <div id="toast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 bg-slate-950 border border-yellow-400 text-white px-4 py-2.5 rounded-2xl shadow-2xl z-50 text-xs font-bold flex items-center space-x-2">
+            <i class="fa-solid fa-bolt text-yellow-400"></i>
+            <span id="toast-msg">Notification</span>
+        </div>
+
+    </div>
+
+    <script>
+        let isOnDuty = false;
+        let permissionsGranted = false;
+        let permissionNagInterval = null;
+        let autoAcceptTimeout = null;
+        let currentRide = null;
+
+        // Load saved settings & start permission check
+        window.onload = function() {
+            const savedPickup = localStorage.getItem('maxPickup');
+            const savedMinDrop = localStorage.getItem('minDrop');
+            const savedMaxDrop = localStorage.getItem('maxDrop');
+            if (savedPickup) document.getElementById('pickup-slider').value = savedPickup;
+            if (savedMinDrop) document.getElementById('drop-min-slider').value = savedMinDrop;
+            if (savedMaxDrop) document.getElementById('drop-max-slider').value = savedMaxDrop;
+            updateSliders();
+            startPermissionNagLoop();
+        };
+
+        // Sync settings directly to Android Native Accessibility Service
+        function syncWithAndroidNative() {
+            const maxPickup = parseFloat(document.getElementById('pickup-slider').value);
+            const minDrop = parseFloat(document.getElementById('drop-min-slider').value);
+            const maxDrop = parseFloat(document.getElementById('drop-max-slider').value);
+
+            localStorage.setItem('maxPickup', maxPickup);
+            localStorage.setItem('minDrop', minDrop);
+            localStorage.setItem('maxDrop', maxDrop);
+
+            if (window.AndroidBridge && window.AndroidBridge.saveFilterSettings) {
+                window.AndroidBridge.saveFilterSettings(maxPickup, minDrop, maxDrop, isOnDuty);
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2600);
+        }
+
+        function areAllPermissionsAllowed() {
+            if (window.AndroidBridge && window.AndroidBridge.isAccessibilityEnabled) {
+                permissionsGranted = window.AndroidBridge.isAccessibilityEnabled();
+                return permissionsGranted;
+            }
+            const n = document.getElementById('perm-notif').checked;
+            const a = document.getElementById('perm-access').checked;
+            const o = document.getElementById('perm-overlay').checked;
+            permissionsGranted = (n && a && o);
+            return permissionsGranted;
+        }
+
+        function startPermissionNagLoop() {
+            if (!areAllPermissionsAllowed()) {
+                openPermissionModal();
+            }
+            clearInterval(permissionNagInterval);
+            permissionNagInterval = setInterval(() => {
+                if (!areAllPermissionsAllowed()) {
+                    openPermissionModal();
+                }
+            }, 4000);
+        }
+
+        function openPermissionModal() {
+            document.getElementById('permission-popup').classList.remove('hidden');
+        }
+
+        function dismissPermissionPopupTemporarily() {
+            document.getElementById('permission-popup').classList.add('hidden');
+            if (!areAllPermissionsAllowed()) {
+                showToast("Permissions missing! Popup will return in 4 seconds.");
+            }
+        }
+
+        function allowAllPermissionsNow() {
+            document.getElementById('perm-notif').checked = true;
+            document.getElementById('perm-access').checked = true;
+            document.getElementById('perm-overlay').checked = true;
+            permissionsGranted = true;
+            clearInterval(permissionNagInterval);
+            document.getElementById('permission-popup').classList.add('hidden');
+
+            // If running inside real Android APK, open phone Accessibility Settings directly
+            if (window.AndroidBridge && window.AndroidBridge.openAccessibilitySettings) {
+                window.AndroidBridge.openAccessibilitySettings();
+            } else {
+                showToast("All Permissions Allowed! Switch ON DUTY now.");
+            }
+        }
+
+        function toggleDuty() {
+            if (!areAllPermissionsAllowed()) {
+                openPermissionModal();
+                showToast("Allow all permissions first!");
+                return;
+            }
+
+            isOnDuty = !isOnDuty;
+            const btn = document.getElementById('duty-toggle-btn');
+            const icon = document.getElementById('duty-icon');
+            const text = document.getElementById('duty-text');
+            const headerDot = document.getElementById('header-dot');
+            const headerSub = document.getElementById('header-sub');
+            const radarBox = document.getElementById('active-radar-box');
+
+            if (isOnDuty) {
+                btn.className = "bg-green-500 border-2 border-green-300 text-slate-950 px-4 py-2 rounded-full font-extrabold text-xs flex items-center space-x-2 transition-all duration-300 duty-on-glow";
+                icon.className = "fa-solid fa-bolt text-slate-950";
+                text.innerText = "ON DUTY";
+                headerDot.className = "w-2 h-2 rounded-full bg-green-400 animate-ping";
+                headerSub.innerText = "ON DUTY • 0.01s CATCHER";
+                headerSub.className = "text-[11px] font-bold text-green-400";
+                radarBox.classList.remove('hidden');
+                showToast("ON DUTY Activated!");
+            } else {
+                btn.className = "bg-slate-800 border-2 border-slate-700 text-slate-300 px-4 py-2 rounded-full font-extrabold text-xs flex items-center space-x-2 transition-all duration-300";
+                icon.className = "fa-solid fa-power-off text-red-400";
+                text.innerText = "OFF DUTY";
+                headerDot.className = "w-2 h-2 rounded-full bg-red-500";
+                headerSub.innerText = "OFF DUTY";
+                headerSub.className = "text-[11px] font-bold text-slate-400";
+                radarBox.classList.add('hidden');
+                showToast("Switched to OFF DUTY.");
+            }
+            syncWithAndroidNative();
+        }
+
+        function updateSliders() {
+            const pickup = parseFloat(document.getElementById('pickup-slider').value);
+            let dropMin = parseFloat(document.getElementById('drop-min-slider').value);
+            let dropMax = parseFloat(document.getElementById('drop-max-slider').value);
+
+            if (dropMin >= dropMax) {
+                dropMax = dropMin + 1;
+                document.getElementById('drop-max-slider').value = dropMax;
+            }
+
+            document.getElementById('pickup-val').innerText = pickup.toFixed(1);
+            document.getElementById('drop-min-val').innerText = dropMin.toFixed(1);
+            document.getElementById('drop-max-val').innerText = dropMax.toFixed(1);
+            syncWithAndroidNative();
+        }
+
+        function simulateIncomingRide(forceMatch) {
+            if (!areAllPermissionsAllowed()) {
+                openPermissionModal();
+                return;
+            }
+            if (!isOnDuty) {
+                showToast("Switch to ON DUTY at the top right first!");
+                return;
+            }
+
+            const maxPickup = parseFloat(document.getElementById('pickup-slider').value);
+            const minDrop = parseFloat(document.getElementById('drop-min-slider').value);
+            const maxDrop = parseFloat(document.getElementById('drop-max-slider').value);
+
+            let ridePickupKm = forceMatch ? Math.max(0.3, (Math.random() * (maxPickup - 0.1)).toFixed(1)) : (maxPickup + 2.5).toFixed(1);
+            let rideDropKm = forceMatch ? (minDrop + Math.random() * (maxDrop - minDrop)).toFixed(1) : (maxDrop + 5.0).toFixed(1);
+
+            currentRide = {
+                pickupKm: parseFloat(ridePickupKm),
+                dropKm: parseFloat(rideDropKm),
+                pickupAddr: "RTC Bus Stand",
+                dropAddr: "Railway Station"
+            };
+
+            document.getElementById('popup-pickup-km').innerText = currentRide.pickupKm + " KM";
+            document.getElementById('popup-drop-km').innerText = currentRide.dropKm + " KM";
+
+            const isFullMatch = (currentRide.pickupKm <= maxPickup) && (currentRide.dropKm >= minDrop && currentRide.dropKm <= maxDrop);
+            const matchBadge = document.getElementById('popup-match-badge');
+            const reasonText = document.getElementById('popup-reason-text');
+            const cursor = document.getElementById('auto-click-cursor');
+
+            document.getElementById('ride-popup').classList.remove('hidden');
+
+            if (isFullMatch) {
+                matchBadge.innerText = "MATCHED • 0.01s CLICK";
+                matchBadge.className = "text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/40";
+                reasonText.innerHTML = `<span class="text-green-400 font-bold">✓ Radius Matched! Auto-Accepting in 0.01s...</span>`;
+                cursor.classList.remove('hidden');
+
+                clearTimeout(autoAcceptTimeout);
+                autoAcceptTimeout = setTimeout(() => {
+                    acceptRideNow("AUTO (0.01s)");
+                }, 150);
+            } else {
+                matchBadge.innerText = "OUT OF RADIUS ✗";
+                matchBadge.className = "text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40";
+                cursor.classList.add('hidden');
+                reasonText.innerHTML = `<span class="text-rose-400 font-bold">✗ Ignored: KM does not match your settings.</span>`;
+            }
+        }
+
+        function acceptRideNow(mode) {
+            clearTimeout(autoAcceptTimeout);
+            document.getElementById('ride-popup').classList.add('hidden');
+            document.getElementById('auto-click-cursor').classList.add('hidden');
+            if (!currentRide) return;
+            showToast(`RIDE ACCEPTED IN 0.01s! (${currentRide.pickupKm}KM ➔ ${currentRide.dropKm}KM)`);
+            addLogItem(currentRide, mode, true);
+            currentRide = null;
+        }
+
+        function closeRidePopup(reason) {
+            clearTimeout(autoAcceptTimeout);
+            document.getElementById('ride-popup').classList.add('hidden');
+            document.getElementById('auto-click-cursor').classList.add('hidden');
+            if (currentRide) {
+                addLogItem(currentRide, reason, false);
+                currentRide = null;
+            }
+        }
+
+        function addLogItem(ride, statusText, accepted) {
+            const container = document.getElementById('ride-logs');
+            if (container.innerText.includes("No rides scanned yet")) container.innerHTML = "";
+            const div = document.createElement('div');
+            div.className = `p-2.5 rounded-xl border flex justify-between items-center ${accepted ? 'bg-emerald-950/30 border-emerald-700/50' : 'bg-slate-900 border-slate-800 opacity-70'}`;
+            div.innerHTML = `
+                <div>
+                    <p class="text-[11px] text-slate-200 font-bold">Pickup: <span class="text-green-400">${ride.pickupKm} KM</span> | Drop: <span class="text-blue-400">${ride.dropKm} KM</span></p>
+                </div>
+                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded ${accepted ? 'bg-green-500 text-slate-950' : 'bg-slate-800 text-slate-400'}">${statusText}</span>
+            `;
+            container.prepend(div);
+        }
+
+        function clearLogs() {
+            document.getElementById('ride-logs').innerHTML = `<p class="text-slate-500 text-center py-3 text-[11px]">No rides scanned yet. Switch ON DUTY to start.</p>`;
+        }
+    </script>
+</body>
+</html>
+```

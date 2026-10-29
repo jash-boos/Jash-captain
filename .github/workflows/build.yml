@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -16,12 +16,12 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'zulu'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate Gradle Wrapper & Build Files
+      - name: Build APK with Gradle
         run: |
           cat << 'EOF' > settings.gradle
           rootProject.name = "CaptainAuto"
@@ -32,8 +32,8 @@ jobs:
           buildscript {
               repositories { google(); mavenCentral() }
               dependencies {
-                  classpath 'com.android.tools.build:gradle:8.1.0'
-                  classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0'
+                  classpath 'com.android.tools.build:gradle:8.3.0'
+                  classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22'
               }
           }
           allprojects {
@@ -75,7 +75,7 @@ jobs:
           }
           EOF
 
-          gradle wrapper --gradle-version 8.2
+          gradle wrapper --gradle-version 8.6
           ./gradlew assembleDebug
 
       - name: Upload Ready APK
